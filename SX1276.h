@@ -4,9 +4,9 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-#define SX1276_DEFAULT_SS_PIN     SS
-#define SX1276_DEFAULT_RESET_PIN  RST_LoRa
-#define SX1276_DEFAULT_DIO0_PIN   DIO0
+#define SX1276_DEFAULT_SS_PIN     18 // SS
+#define SX1276_DEFAULT_RESET_PIN  14 // RST_LoRa
+#define SX1276_DEFAULT_DIO0_PIN   26 // DIO0
 
 #define PA_OUTPUT_PA_BOOST_PIN  1
 #define PA_OUTPUT_RFO_PIN       0

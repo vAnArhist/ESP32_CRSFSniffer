@@ -79,6 +79,11 @@
 
 #include "esp32-hal-timer.h"
 
+#define SDA_OLED 4
+#define SCL_OLED 15
+#define LED_PIN  2
+#define RST_OLED 16
+
 #define COUNT(x) (sizeof(x)/sizeof((x)[0]))
 #define CONFIG_MAGIC 0xC0FFFEF6
 
@@ -113,7 +118,9 @@ int retries = 0;
 
 uint8_t hoppingPos = 0;
 uint32_t cfgBitrate = 85000;
+// FreqShift
 uint32_t cfgFreqDev = 42300;
+// channel spacing
 uint32_t cfgChanDist = 260010;
 uint64_t cfgStartFreq = 860000000ULL;
 bool enableAfc = false;
@@ -744,7 +751,7 @@ void IRAM_ATTR fifo_isr_body(uint64_t timestamp)
     
       if(!currentDirectionDown)
       {
-        digitalWrite(LED, HIGH);
+        digitalWrite(LED_PIN, HIGH);
         statRssiUp = (31.0f*statRssiUp + rssi) / 32.0f;
         plotRssiUp->AddSample(rssi * -0.5f);
         freqCorrectionUp += afc / 1000.0f;
@@ -754,7 +761,7 @@ void IRAM_ATTR fifo_isr_body(uint64_t timestamp)
       }
       else
       {
-        digitalWrite(LED, LOW);
+        digitalWrite(LED_PIN, LOW);
         statRssiDown = (31.0f*statRssiDown + rssi) / 32.0f;
         plotRssiDown->AddSample(rssi * -0.5f);
         freqCorrectionDown += afc / 1000.0f;
@@ -1024,7 +1031,7 @@ void loop_core1(void *unused);
 
 void setup()
 { 
-  Serial.begin(250000);
+  Serial.begin(115200);
 
   Serial.printf("\n\n\n");
 
@@ -1068,14 +1075,14 @@ void setup()
   
 
   Serial.printf("[i]   Setup Timers/Interrupts\n");
-  pinMode(DIO0, INPUT);
-  attachInterrupt(digitalPinToInterrupt(DIO0), fifoReadyIsr, RISING);
+  pinMode(SX1276_DEFAULT_DIO0_PIN, INPUT);
+  attachInterrupt(digitalPinToInterrupt(SX1276_DEFAULT_DIO0_PIN), fifoReadyIsr, RISING);
 
   scheduleTimer = timerBegin(2, 80, true);
   timerAttachInterrupt(scheduleTimer, &timer_isr, true);
   
-  pinMode(LED,OUTPUT);
-  digitalWrite(LED,LOW);
+  pinMode(LED_PIN,OUTPUT);
+  digitalWrite(LED_PIN,LOW);
 
   Serial.printf("[i]   Setup Plots\n");
   plotRssiUp = new PlotClass(Display, "RSSI up", 16, 64);
@@ -1116,9 +1123,9 @@ void loop()
   buttonPressed |= chanPercent(8) > 80;
 
   /* fade out display to prevent burn-in */
-  float contrast = 255;
+  float contrast = 100;
   
-  if(currentTime - lastButtonPressTime > 60000)
+  if(currentTime - lastButtonPressTime > 120000)
   {
     contrast = 0;
   }
@@ -1150,33 +1157,33 @@ void loop()
       {
         switch(menu_pos)
         {
-          case 0:
+          case 0: // Display
             /* follow hopping */
             state = 200;
             break;
             
-          case 1:
+          case 1: // Scan 868
             /* start hopping scan */
             cfgChanDist = 260000;
             cfgStartFreq = 860000000;
             state = 0;
             break;
             
-          case 2:
+          case 2: // Scan 868 CE (ToDo)
             /* start hopping scan */
             //cfgChanDist = 112000;
             //cfgStartFreq = 860000000;
             //state = 0;
             break;
             
-          case 3:
+          case 3: // Scan 915
             /* start hopping scan */
             cfgChanDist = 260000;
             cfgStartFreq = 900000000;
             state = 0;
             break;
             
-          case 4:
+          case 4: // Scan 915 AU (ToDo)
             /* start hopping scan */
             //cfgChanDist = 112000;
             //cfgStartFreq = 915000000;
@@ -1205,7 +1212,7 @@ void loop()
       else
       {
         state = 300;
-        digitalWrite(LED,LOW);
+        digitalWrite(LED_PIN,LOW);
         timerAlarmDisable(scheduleTimer);
       }
     }
